@@ -11,6 +11,9 @@
 # Output
 *.out
 
+# Coverage
+coverage.html
+
 # IDE
 .idea/
 .vscode/

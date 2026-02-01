@@ -6,6 +6,7 @@ import (
 
 	"github.com/spaghettifactory-oss/pipeforge-postgres/source"
 	"github.com/spaghettifactory-oss/pipeforge-postgres/store"
+	"github.com/spaghettifactory-oss/pipeforge/adapters/transform"
 	"github.com/spaghettifactory-oss/pipeforge/domain"
 	"github.com/spaghettifactory-oss/pipeforge/pipeline"
 	"gorm.io/driver/postgres"
@@ -72,7 +73,8 @@ func main() {
 			GROUP BY customer
 			ORDER BY total_revenue DESC
 		`),
-		Store: store.NewPostgresStore(db, "order_summary"),
+		Transform: transform.NewTransformBuilder().Build(),
+		Store:     store.NewPostgresStore(db, "order_summary"),
 	}
 
 	result, err := p.RunWithResult()

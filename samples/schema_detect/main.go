@@ -6,6 +6,7 @@ import (
 
 	"github.com/spaghettifactory-oss/pipeforge-postgres/source"
 	"github.com/spaghettifactory-oss/pipeforge-postgres/store"
+	"github.com/spaghettifactory-oss/pipeforge/adapters/transform"
 	"github.com/spaghettifactory-oss/pipeforge/pipeline"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -63,8 +64,9 @@ func main() {
 
 	// Use detected schema to copy data
 	p := pipeline.DataPipeline{
-		Source: source.NewPostgresSource(db, "inventory", schema),
-		Store:  store.NewPostgresStore(db, "inventory_backup"),
+		Source:    source.NewPostgresSource(db, "inventory", schema),
+		Transform: transform.NewTransformBuilder().Build(),
+		Store:     store.NewPostgresStore(db, "inventory_backup"),
 	}
 
 	result, err := p.RunWithResult()
