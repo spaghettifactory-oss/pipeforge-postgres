@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>source: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/spaghettifactory-oss/pipeforge-postgres/source/postgres_source.go (87.8%)</option>
+				
+				<option value="file1">github.com/spaghettifactory-oss/pipeforge-postgres/store/postgres_store.go (95.5%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package source
+
+import (
+        "fmt"
+
+        "github.com/spaghettifactory-oss/pipeforge/domain"
+        "gorm.io/gorm"
+)
+
+type PostgresSource struct {
+        DB        *gorm.DB
+        TableName string
+        Schema    *domain.DataSchema
+        where     []WhereClause
+        joins     []JoinClause
+}
+
+type WhereClause struct {
+        Query string
+        Args  []any
+}
+
+type JoinClause struct {
+        Query string
+        Args  []any
+}
+
+type SourceOption func(*PostgresSource)
+
+func WithWhere(query string, args ...any) SourceOption <span class="cov8" title="1">{
+        return func(s *PostgresSource) </span><span class="cov8" title="1">{
+                s.where = append(s.where, WhereClause{Query: query, Args: args})
+        }</span>
+}
+
+func WithJoin(query string, args ...any) SourceOption <span class="cov8" title="1">{
+        return func(s *PostgresSource) </span><span class="cov8" title="1">{
+                s.joins = append(s.joins, JoinClause{Query: query, Args: args})
+        }</span>
+}
+
+func NewPostgresSource(db *gorm.DB, tableName string, schema *domain.DataSchema, opts ...SourceOption) *PostgresSource <span class="cov8" title="1">{
+        s := &amp;PostgresSource{
+                DB:        db,
+                TableName: tableName,
+                Schema:    schema,
+        }
+        for _, opt := range opts </span><span class="cov8" title="1">{
+                opt(s)
+        }</span>
+        <span class="cov8" title="1">return s</span>
+}
+
+func (s *PostgresSource) Load() (*domain.RecordSet, error) <span class="cov8" title="1">{
+        var results []map[string]any
+
+        query := s.DB.Table(s.TableName)
+
+        for _, join := range s.joins </span><span class="cov8" title="1">{
+                query = query.Joins(join.Query, join.Args...)
+        }</span>
+
+        <span class="cov8" title="1">for _, where := range s.where </span><span class="cov8" title="1">{
+                query = query.Where(where.Query, where.Args...)
+        }</span>
+
+        <span class="cov8" title="1">if err := query.Find(&amp;results).Error; err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("failed to load from table %s: %w", s.TableName, err)
+        }</span>
+
+        <span class="cov8" title="1">records := make([]*domain.Record, 0, len(results))
+        for _, row := range results </span><span class="cov8" title="1">{
+                record := &amp;domain.Record{
+                        Schema: s.Schema,
+                        Values: make(map[string]domain.Value),
+                }
+
+                for _, col := range s.Schema.Columns </span><span class="cov8" title="1">{
+                        colID := col.GetID()
+                        val, ok := row[colID]
+                        if !ok || val == nil </span><span class="cov8" title="1">{
+                                record.Values[colID] = domain.NullValue{}
+                                continue</span>
+                        }
+                        <span class="cov8" title="1">record.Values[colID] = convertToValue(val, col.GetType())</span>
+                }
+                <span class="cov8" title="1">records = append(records, record)</span>
+        }
+
+        <span class="cov8" title="1">return &amp;domain.RecordSet{
+                Schema:  s.Schema,
+                Records: records,
+        }, nil</span>
+}
+
+func convertToValue(val any, schemaType domain.SchemaType) domain.Value <span class="cov8" title="1">{
+        switch schemaType </span>{
+        case domain.NativeTypeString:<span class="cov8" title="1">
+                if v, ok := val.(string); ok </span><span class="cov8" title="1">{
+                        return domain.StringValue(v)
+                }</span>
+                <span class="cov8" title="1">return domain.StringValue(fmt.Sprintf("%v", val))</span>
+        case domain.NativeTypeInt:<span class="cov8" title="1">
+                switch v := val.(type) </span>{
+                case int:<span class="cov0" title="0">
+                        return domain.IntValue(v)</span>
+                case int32:<span class="cov8" title="1">
+                        return domain.IntValue(int(v))</span>
+                case int64:<span class="cov8" title="1">
+                        return domain.IntValue(int(v))</span>
+                case float64:<span class="cov0" title="0">
+                        return domain.IntValue(int(v))</span>
+                }
+                <span class="cov8" title="1">return domain.IntValue(0)</span>
+        case domain.NativeTypeFloat:<span class="cov8" title="1">
+                switch v := val.(type) </span>{
+                case float64:<span class="cov8" title="1">
+                        return domain.FloatValue(v)</span>
+                case float32:<span class="cov0" title="0">
+                        return domain.FloatValue(float64(v))</span>
+                case int:<span class="cov0" title="0">
+                        return domain.FloatValue(float64(v))</span>
+                case int32:<span class="cov8" title="1">
+                        return domain.FloatValue(float64(v))</span>
+                case int64:<span class="cov0" title="0">
+                        return domain.FloatValue(float64(v))</span>
+                }
+                <span class="cov8" title="1">return domain.FloatValue(0)</span>
+        case domain.NativeTypeBool:<span class="cov8" title="1">
+                if v, ok := val.(bool); ok </span><span class="cov8" title="1">{
+                        return domain.BoolValue(v)
+                }</span>
+                <span class="cov8" title="1">return domain.BoolValue(false)</span>
+        default:<span class="cov0" title="0">
+                return domain.NullValue{}</span>
+        }
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package store
+
+import (
+        "fmt"
+        "time"
+
+        "github.com/spaghettifactory-oss/pipeforge/domain"
+        "gorm.io/gorm"
+)
+
+type PostgresStore struct {
+        DB        *gorm.DB
+        TableName string
+        Truncate  bool
+}
+
+func NewPostgresStore(db *gorm.DB, tableName string) *PostgresStore <span class="cov8" title="1">{
+        return &amp;PostgresStore{
+                DB:        db,
+                TableName: tableName,
+                Truncate:  false,
+        }
+}</span>
+
+func NewPostgresStoreWithTruncate(db *gorm.DB, tableName string) *PostgresStore <span class="cov8" title="1">{
+        return &amp;PostgresStore{
+                DB:        db,
+                TableName: tableName,
+                Truncate:  true,
+        }
+}</span>
+
+func (s *PostgresStore) Store(recordSet *domain.RecordSet) error <span class="cov8" title="1">{
+        if s.Truncate </span><span class="cov8" title="1">{
+                if err := s.DB.Exec(fmt.Sprintf("TRUNCATE TABLE %s", s.TableName)).Error; err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("failed to truncate table %s: %w", s.TableName, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">for _, record := range recordSet.Records </span><span class="cov8" title="1">{
+                row := convertRecordToMap(record)
+                if err := s.DB.Table(s.TableName).Create(row).Error; err != nil </span><span class="cov8" title="1">{
+                        return fmt.Errorf("failed to insert into table %s: %w", s.TableName, err)
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func convertRecordToMap(record *domain.Record) map[string]any <span class="cov8" title="1">{
+        row := make(map[string]any)
+        for key, val := range record.Values </span><span class="cov8" title="1">{
+                row[key] = convertValueToNative(val)
+        }</span>
+        <span class="cov8" title="1">return row</span>
+}
+
+func convertValueToNative(val domain.Value) any <span class="cov8" title="1">{
+        switch v := val.(type) </span>{
+        case domain.StringValue:<span class="cov8" title="1">
+                return string(v)</span>
+        case domain.IntValue:<span class="cov8" title="1">
+                return int(v)</span>
+        case domain.FloatValue:<span class="cov8" title="1">
+                return float64(v)</span>
+        case domain.BoolValue:<span class="cov8" title="1">
+                return bool(v)</span>
+        case domain.DateValue:<span class="cov8" title="1">
+                return time.Time(v)</span>
+        case domain.NullValue:<span class="cov8" title="1">
+                return nil</span>
+        default:<span class="cov0" title="0">
+                return nil</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>
