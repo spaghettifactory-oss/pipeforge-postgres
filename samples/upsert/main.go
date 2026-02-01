@@ -85,7 +85,14 @@ func main() {
 	var updates []map[string]any
 	db.Table("price_updates").Find(&updates)
 	for _, u := range updates {
-		newPrice := int(u["price"].(int64)) * 110 / 100
+		var price int
+		switch v := u["price"].(type) {
+		case int32:
+			price = int(v)
+		case int64:
+			price = int(v)
+		}
+		newPrice := price * 110 / 100
 		fmt.Printf("  %s: %v -> %d EUR\n", u["name"], u["price"], newPrice)
 	}
 

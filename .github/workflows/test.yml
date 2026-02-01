@@ -28,10 +28,10 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25'
 
       - name: Run tests
-        run: go test ./... -v -cover
+        run: go test ./source/... ./store/... -v -cover
 
   sample-price-increase:
     needs: unit-tests
@@ -57,7 +57,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25'
+          cache: false
 
       - name: Run sample
         run: go run samples/price_increase/main.go
@@ -86,7 +87,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25'
+          cache: false
 
       - name: Run sample
         run: go run samples/raw_query/main.go
@@ -115,7 +117,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25'
+          cache: false
 
       - name: Run sample
         run: go run samples/schema_detect/main.go
@@ -144,7 +147,8 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.21'
+          go-version: '1.25'
+          cache: false
 
       - name: Run sample
         run: go run samples/upsert/main.go
